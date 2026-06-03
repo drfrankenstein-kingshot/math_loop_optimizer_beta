@@ -171,7 +171,7 @@ with w_col2:
                     a_s3 = sc1.selectbox("Sup 3", hero_list, index=0, key=f"ws3_{i}")
                     a_s4 = sc2.selectbox("Sup 4", hero_list, index=0, key=f"ws4_{i}")
 
-                with st.expander(f"Wave {i+1} Core Combat Stats Override"):
+                 with st.expander(f"Wave {i+1} Core Combat Stats Override"):
                     stat_col1, stat_col2, stat_col3 = st.columns(3)
                     with stat_col1:
                         a_inf_atk = st.number_input("Inf Atk %", value=1000.0, key=f"a_ia_{i}")
