@@ -35,7 +35,7 @@ else:
     # =========================================================================
     # --- OPTIMIZER APPLICATION (UNLOCKED) ---
     # =========================================================================
-    st.title("📈 Kingshot Garrison Optimization Engine")
+    st.title("Kingshot Garrison Optimization Engine")
     st.caption("Calculate the mathematically optimal Garrison setup against defined Attacker Waves.")
     
     if st.sidebar.button("Lock Application"):
@@ -133,12 +133,14 @@ else:
         st.header("Attacking Rally Waves (The Threat)")
         
         num_waves = st.number_input("Number of Rally Waves", min_value=1, max_value=5, value=2, step=1)
-        wave_tabs = st.tabs([f"🌊 Wave {i+1}" for i in range(num_waves)])
+        wave_tabs = st.tabs([f"Wave {i+1}" for i in range(num_waves)])
         
         wave_configs = {}
         
         for i, tab in enumerate(wave_tabs):
             with tab:
+                st.subheader(f"Parameters for Rally Wave #{i+1}")
+                
                 w_col1, w_col2 = st.columns(2)
                 with w_col1:
                     wc1, wc2 = st.columns(2)
@@ -150,7 +152,7 @@ else:
                     a_cav = st.number_input("Cavalry Count", value=200000, key=f"w_cav_{i}")
                     a_arc = st.number_input("Archer Count", value=200000, key=f"w_arc_{i}")
                     
-with w_col2:
+                with w_col2:
                     st.markdown("**Main Leaders & Widgets**")
                     ahc1, awc1 = st.columns([3, 1])
                     a_l1 = ahc1.selectbox("Rally Leader 1", hero_list, index=0, key=f"wl1_{i}")
@@ -171,7 +173,7 @@ with w_col2:
                     a_s3 = sc1.selectbox("Sup 3", hero_list, index=0, key=f"ws3_{i}")
                     a_s4 = sc2.selectbox("Sup 4", hero_list, index=0, key=f"ws4_{i}")
 
-                 with st.expander(f"Wave {i+1} Core Combat Stats Override"):
+                with st.expander(f"Wave {i+1} Core Combat Stats Override"):
                     stat_col1, stat_col2, stat_col3 = st.columns(3)
                     with stat_col1:
                         a_inf_atk = st.number_input("Inf Atk %", value=1000.0, key=f"a_ia_{i}")
@@ -322,9 +324,9 @@ with w_col2:
                 
                 st.markdown("### Top 5 Optimal Configurations")
                 top_5 = sorted_results[:5]
-                formatted_top_5 = [{"Rank": i+1, "Configuration": r["Configuration"], "Avg Remaining Troops": f"{r['Avg Remaining Troops']:,.0f}"} for i, r in enumerate(top_5)]
+                formatted_top_5 = [{"Rank": i+1, "Configuration": r["Configuration"], "Avg Remaining Troops": f"{r['Avg Remaining Troops']:,.0f}", "Survival Rate %": f"{r['Survival Rate %']:.1f}%"} for i, r in enumerate(top_5)]
                 st.table(formatted_top_5)
                 
                 with st.expander("View Full Leaderboard"):
-                    full_formatted = [{"Rank": i+1, "Configuration": r["Configuration"], "Avg Remaining Troops": f"{r['Avg Remaining Troops']:,.0f}"} for i, r in enumerate(sorted_results)]
+                    full_formatted = [{"Rank": i+1, "Configuration": r["Configuration"], "Avg Remaining Troops": f"{r['Avg Remaining Troops']:,.0f}", "Survival Rate %": f"{r['Survival Rate %']:.1f}%"} for i, r in enumerate(sorted_results)]
                     st.dataframe(full_formatted, use_container_width=True)
