@@ -43,24 +43,19 @@ else:
         st.rerun()
 
     hero_db = load_hero_db()
-# Generate hero lists with "None" appended as the first index option
+    
+    # Generate hero lists with "None" appended as the first index option
     hero_list = ["None"] + sorted(list(hero_db.keys()))
     
-    # If using the optimized version with explicit class lists, do this too:
-# Master tracking lists updated with custom variants and Gen 4 targets
+    # Master tracking lists updated with custom variants and Gen 4 targets
     infantry_heroes = ["None"] + sorted(["Eric", "Zoe", "Amadeus", "Helga", "Howard", "Alcar"])
     cavalry_heroes = ["None"] + sorted(["Gordon", "Fahd", "Chenko", "Petra", "Hilde", "Jabel", "Margot"])
     archer_heroes = ["None"] + sorted(["Jaegar", "Marlin", "Saul", "Yaenwoo", "Amane", "Quinn", "Rosa"])
     
-    # Standard purple joiners setup
-    joiner_pool_defaults = [h for h in hero_list if not hero_db[h].get('widget', {}).get('has_widget', True)]
+    # Standard purple joiners setup - with a safety filter to prevent looking up "None" in hero_db
+    joiner_pool_defaults = [h for h in hero_list if h != "None" and not hero_db[h].get('widget', {}).get('has_widget', True)]
     if not joiner_pool_defaults:
-        joiner_pool_defaults = ["Gordon", "Fahd", "Chenko", "Yaenwoo", "Howard","Quinn","Amane"]
-    
-    # Standard purple joiners setup
-    joiner_pool_defaults = [h for h in hero_list if not hero_db[h].get('widget', {}).get('has_widget', True)]
-    if not joiner_pool_defaults:
-        joiner_pool_defaults = ["Gordon", "Fahd", "Chenko", "Yaenwoo", "Howard","Quinn","Amane"]
+        joiner_pool_defaults = ["Gordon", "Fahd", "Chenko", "Yaenwoo", "Howard", "Quinn", "Amane"]
 
     # =========================================================================
     # --- NEW CORE CONTROLLERS ---
@@ -95,6 +90,7 @@ else:
         if opt_side == "Garrison (Defenders)" and "Troop Ratios" in opt_mode:
             g_total_troops = st.number_input("Total Garrison Capacity", value=2800000, step=100000)
             g_inf, g_cav, g_arc = 0, 0, 0  # Will scale completely in loop
+            g_valid = True
         else:
             g_input_style = st.radio("Garrison Troop Input Style", ("Raw Counts", "Capacity + Ratios"), key="g_style")
             if g_input_style == "Raw Counts":
@@ -102,6 +98,7 @@ else:
                 g_cav = st.number_input("Garrison Cavalry Count", value=500000)
                 g_arc = st.number_input("Garrison Archer Count", value=800000)
                 g_total_troops = g_inf + g_cav + g_arc
+                g_valid = True
             else:
                 g_total_troops = st.number_input("Total Garrison Capacity Target", value=2800000, step=100000)
                 st.markdown("**Adjust Garrison Ratios (Must equal 100%)**")
@@ -137,15 +134,15 @@ else:
         with st.expander("Garrison Leadership & Supplements"):
             st.markdown("### Main Leaders (3)")
             hc1, wc1 = st.columns([3, 1])
-            g_lead1 = hc1.selectbox("Garrison Lead 1", hero_list, index=hero_list.index("Amadeus") if "Amadeus" in hero_list else 0, key="gl1")
+            g_lead1 = hc1.selectbox("Infantry Hero", infantry_heroes, index=infantry_heroes.index("Amadeus") if "Amadeus" in infantry_heroes else 0, key="gl1")
             g_wid1 = wc1.number_input("Widget 1", 0, 10, 10, key="gw1")
             
             hc2, wc2 = st.columns([3, 1])
-            g_lead2 = hc2.selectbox("Garrison Lead 2", hero_list, index=hero_list.index("Hilde") if "Hilde" in hero_list else 0, key="gl2")
+            g_lead2 = hc2.selectbox("Cavalry Hero", cavalry_heroes, index=cavalry_heroes.index("Hilde") if "Hilde" in cavalry_heroes else 0, key="gl2")
             g_wid2 = wc2.number_input("Widget 2", 0, 10, 10, key="gw2")
             
             hc3, wc3 = st.columns([3, 1])
-            g_lead3 = hc3.selectbox("Garrison Lead 3", hero_list, index=hero_list.index("Marlin") if "Marlin" in hero_list else 0, key="gl3")
+            g_lead3 = hc3.selectbox("Archer Hero", archer_heroes, index=archer_heroes.index("Marlin") if "Marlin" in archer_heroes else 0, key="gl3")
             g_wid3 = wc3.number_input("Widget 3", 0, 10, 10, key="gw3")
             
             st.markdown("---")
@@ -204,6 +201,7 @@ else:
                         st.info("🎯 **Troop Composition for Wave 1 is being optimized.** Ratios will loop continuously across execution.")
                         a_total_capacity = st.number_input("Rally Size Capacity Limit", value=1000000, step=50000, key=f"w_cap_{i}")
                         a_inf, a_cav, a_arc = 0, 0, 0
+                        st.session_state[f"w_valid_{i}"] = True
                     else:
                         w_input_style = st.radio(f"Wave {i+1} Troop Input Style", ("Raw Counts", "Rally Size + Ratios"), key=f"w_style_{i}")
                         if w_input_style == "Raw Counts":
@@ -211,6 +209,7 @@ else:
                             a_cav = st.number_input("Cavalry Count", value=200000, key=f"w_cav_{i}")
                             a_arc = st.number_input("Archer Count", value=200000, key=f"w_arc_{i}")
                             a_total_capacity = a_inf + a_cav + a_arc
+                            st.session_state[f"w_valid_{i}"] = True
                         else:
                             a_total_capacity = st.number_input("Rally Size Capacity Limit", value=1000000, step=50000, key=f"w_cap_{i}")
                             st.markdown(f"**Adjust Wave {i+1} Ratios (Must equal 100%)**")
@@ -259,7 +258,7 @@ else:
                     if opt_side == "Attacker Waves (Rallies)" and opt_mode == "Attacker Wave #1 Supporter Heroes" and i == 0:
                         st.markdown("### Supporter Hero Optimization Pool (Wave 1)")
                         opt_hero_pool = st.multiselect("Wave 1 Joiner Options Pool", hero_list, default=joiner_pool_defaults, key="w1_pool_opt")
-                        a_s1, a_s2, a_s3, a_s4 = None, None, None, None
+                        a_s1, a_s2, a_s3, a_s4 = "None", "None", "None", "None"
                     else:
                         st.markdown("**Supporter Heroes (4)**")
                         sc1, sc2 = st.columns(2)
@@ -303,120 +302,125 @@ else:
         st.markdown("---")
         mc_runs = st.number_input("MC Iterations per Combination", min_value=10, max_value=500, value=40, step=10)
 
+        # Enforce structural input constraint safeguards prior to exposing runtime loops
+        all_waves_valid = all(st.session_state.get(f"w_valid_{w_idx}", True) for w_idx in range(num_waves))
+        
         # =========================================================================
         # --- COMPREHENSIVE MULTI-SIDE EXECUTABLE ENGINE ---
         # =========================================================================
-        if st.button("🚀 Run Optimization Engine Grid Search"):
-            with st.spinner("Processing Continuous Mathematical Strategy Grids..."):
-                
-                # Global Variable Conversions (Widget math removed, engine handles it)
-                g_widgets = [g_wid1, g_wid2, g_wid3, 0, 0, 0, 0]
-                g_combat_stats = [
-                    [g_inf_atk, g_inf_def, g_inf_let, g_inf_hp],
-                    [g_cav_atk, g_cav_def, g_cav_let, g_cav_hp],
-                    [g_arc_atk, g_arc_def, g_arc_let, g_arc_hp]
-                ]
-                
-                results_grid = []
-                ratio_grid = [(i/10.0, j/10.0, (10-i-j)/10.0) for i in range(11) for j in range(11-i)]
-
-                # Helper to construct active waves dynamically inside loops
-                def build_waves(wave_1_override_troops=None, wave_1_override_heroes=None):
-                    waves = []
-                    for idx in range(num_waves):
-                        w_data = wave_configs[idx]
-                        w_combat_stats = copy.deepcopy(w_data["stats"])
-                            
-                        t_troops = w_data["troops"]
-                        t_sups = w_data["supporters"]
-                        
-                        if idx == 0:
-                            if wave_1_override_troops is not None: t_troops = wave_1_override_troops
-                            if wave_1_override_heroes is not None: t_sups = wave_1_override_heroes
-                            
-                        waves.append(TroopSide(
-                            troops=t_troops, stats=w_combat_stats,
-                            leader_heroes=w_data["leaders"], supporter_heroes=t_sups,
-                            tier=w_data["tier"], tg_level=w_data["tg"], widget_levels=w_data["widgets"]
-                        ))
-                    return waves
-
-                # -----------------------------------------------------------------
-                # EXECUTION LOGIC TREE
-                # -----------------------------------------------------------------
-                
-                # --- CASE A: GARRISON TROOP COMPOSITION ---
-                if opt_side == "Garrison (Defenders)" and "Troop Ratios" in opt_mode:
-                    p_bar = st.progress(0)
-                    for idx, r in enumerate(ratio_grid):
-                        test_troops = [g_total_troops * r[0], g_total_troops * r[1], g_total_troops * r[2]]
-                        g_setup = TroopSide(test_troops, g_combat_stats, [g_lead1, g_lead2, g_lead3], g_sup_heroes, g_tier, g_tg, g_widgets)
-                        w_set = build_waves()
-                        
-                        tot_surv = sum(np.sum(kingshot_multirally_sim2(copy.deepcopy(w_set), copy.deepcopy(g_setup))[0].troops) for _ in range(mc_runs))
-                        avg_surv = tot_surv / mc_runs
-                        results_grid.append({"Configuration": f"Inf: {r[0]*100:.0f}% | Cav: {r[1]*100:.0f}% | Arc: {r[2]*100:.0f}%", "Avg Survivors": avg_surv, "Rate": (avg_surv / g_total_troops) * 100})
-                        p_bar.progress((idx + 1) / len(ratio_grid))
-
-                # --- CASE B: GARRISON SUPPORTER HEROES ---
-                elif opt_side == "Garrison (Defenders)" and "Supporter Heroes" in opt_mode:
-                    combos = list(itertools.combinations_with_replacement(opt_hero_pool, 4))
-                    p_bar = st.progress(0)
-                    for idx, combo in enumerate(combos):
-                        g_setup = TroopSide([g_inf, g_cav, g_arc], g_combat_stats, [g_lead1, g_lead2, g_lead3], list(combo), g_tier, g_tg, g_widgets)
-                        w_set = build_waves()
-                        
-                        tot_surv = sum(np.sum(kingshot_multirally_sim2(copy.deepcopy(w_set), copy.deepcopy(g_setup))[0].troops) for _ in range(mc_runs))
-                        avg_surv = tot_surv / mc_runs
-                        results_grid.append({"Configuration": f"{', '.join(combo)}", "Avg Survivors": avg_surv, "Rate": (avg_surv / max(1, g_total_troops)) * 100})
-                        p_bar.progress((idx + 1) / len(combos))
-
-                # --- CASE C: ATTACKER WAVE 1 TROOP COMPOSITION ---
-                elif opt_side == "Attacker Waves (Rallies)" and "Troop Ratios" in opt_mode:
-                    p_bar = st.progress(0)
-                    w1_cap = wave_configs[0]["capacity"]
-                    g_setup = TroopSide([g_inf, g_cav, g_arc], g_combat_stats, [g_lead1, g_lead2, g_lead3], g_sup_heroes, g_tier, g_tg, g_widgets)
+        if all_waves_valid and g_valid:
+            if st.button("🚀 Run Optimization Engine Grid Search"):
+                with st.spinner("Processing Continuous Mathematical Strategy Grids..."):
                     
-                    for idx, r in enumerate(ratio_grid):
-                        test_w1_troops = [w1_cap * r[0], w1_cap * r[1], w1_cap * r[2]]
-                        w_set = build_waves(wave_1_override_troops=test_w1_troops)
-                        
-                        tot_surv = sum(np.sum(kingshot_multirally_sim2(copy.deepcopy(w_set), copy.deepcopy(g_setup))[0].troops) for _ in range(mc_runs))
-                        avg_surv = tot_surv / mc_runs
-                        # For attacker optimization, we look to MINIMIZE garrison survival rate
-                        results_grid.append({"Configuration": f"Wave 1 -> Inf: {r[0]*100:.0f}% | Cav: {r[1]*100:.0f}% | Arc: {r[2]*100:.0f}%", "Avg Survivors": avg_surv, "Rate": (avg_surv / max(1, g_total_troops)) * 100})
-                        p_bar.progress((idx + 1) / len(ratio_grid))
-
-                # --- CASE D: ATTACKER WAVE 1 SUPPORTER HEROES ---
-                elif opt_side == "Attacker Waves (Rallies)" and "Supporter Heroes" in opt_mode:
-                    combos = list(itertools.combinations_with_replacement(opt_hero_pool, 4))
-                    p_bar = st.progress(0)
-                    g_setup = TroopSide([g_inf, g_cav, g_arc], g_combat_stats, [g_lead1, g_lead2, g_lead3], g_sup_heroes, g_tier, g_tg, g_widgets)
+                    # Global Variable Conversions (Widget math removed, engine handles it)
+                    g_widgets = [g_wid1, g_wid2, g_wid3, 0, 0, 0, 0]
+                    g_combat_stats = [
+                        [g_inf_atk, g_inf_def, g_inf_let, g_inf_hp],
+                        [g_cav_atk, g_cav_def, g_cav_let, g_cav_hp],
+                        [g_arc_atk, g_arc_def, g_arc_let, g_arc_hp]
+                    ]
                     
-                    for idx, combo in enumerate(combos):
-                        w_set = build_waves(wave_1_override_heroes=list(combo))
+                    results_grid = []
+                    ratio_grid = [(i/10.0, j/10.0, (10-i-j)/10.0) for i in range(11) for j in range(11-i)]
+
+                    # Helper to construct active waves dynamically inside loops
+                    def build_waves(wave_1_override_troops=None, wave_1_override_heroes=None):
+                        waves = []
+                        for idx in range(num_waves):
+                            w_data = wave_configs[idx]
+                            w_combat_stats = copy.deepcopy(w_data["stats"])
+                                
+                            t_troops = w_data["troops"]
+                            t_sups = w_data["supporters"]
+                            
+                            if idx == 0:
+                                if wave_1_override_troops is not None: t_troops = wave_1_override_troops
+                                if wave_1_override_heroes is not None: t_sups = wave_1_override_heroes
+                                
+                            waves.append(TroopSide(
+                                troops=t_troops, stats=w_combat_stats,
+                                leader_heroes=w_data["leaders"], supporter_heroes=t_sups,
+                                tier=w_data["tier"], tg_level=w_data["tg"], widget_levels=w_data["widgets"]
+                            ))
+                        return waves
+
+                    # -----------------------------------------------------------------
+                    # EXECUTION LOGIC TREE
+                    # -----------------------------------------------------------------
+                    
+                    # --- CASE A: GARRISON TROOP COMPOSITION ---
+                    if opt_side == "Garrison (Defenders)" and "Troop Ratios" in opt_mode:
+                        p_bar = st.progress(0)
+                        for idx, r in enumerate(ratio_grid):
+                            test_troops = [g_total_troops * r[0], g_total_troops * r[1], g_total_troops * r[2]]
+                            g_setup = TroopSide(test_troops, g_combat_stats, [g_lead1, g_lead2, g_lead3], g_sup_heroes, g_tier, g_tg, g_widgets)
+                            w_set = build_waves()
+                            
+                            tot_surv = sum(np.sum(kingshot_multirally_sim2(copy.deepcopy(w_set), copy.deepcopy(g_setup))[0].troops) for _ in range(mc_runs))
+                            avg_surv = tot_surv / mc_runs
+                            results_grid.append({"Configuration": f"Inf: {r[0]*100:.0f}% | Cav: {r[1]*100:.0f}% | Arc: {r[2]*100:.0f}%", "Avg Survivors": avg_surv, "Rate": (avg_surv / g_total_troops) * 100})
+                            p_bar.progress((idx + 1) / len(ratio_grid))
+
+                    # --- CASE B: GARRISON SUPPORTER HEROES ---
+                    elif opt_side == "Garrison (Defenders)" and "Supporter Heroes" in opt_mode:
+                        combos = list(itertools.combinations_with_replacement(opt_hero_pool, 4))
+                        p_bar = st.progress(0)
+                        for idx, combo in enumerate(combos):
+                            g_setup = TroopSide([g_inf, g_cav, g_arc], g_combat_stats, [g_lead1, g_lead2, g_lead3], list(combo), g_tier, g_tg, g_widgets)
+                            w_set = build_waves()
+                            
+                            tot_surv = sum(np.sum(kingshot_multirally_sim2(copy.deepcopy(w_set), copy.deepcopy(g_setup))[0].troops) for _ in range(mc_runs))
+                            avg_surv = tot_surv / mc_runs
+                            results_grid.append({"Configuration": f"{', '.join(combo)}", "Avg Survivors": avg_surv, "Rate": (avg_surv / max(1, g_total_troops)) * 100})
+                            p_bar.progress((idx + 1) / len(combos))
+
+                    # --- CASE C: ATTACKER WAVE 1 TROOP COMPOSITION ---
+                    elif opt_side == "Attacker Waves (Rallies)" and "Troop Ratios" in opt_mode:
+                        p_bar = st.progress(0)
+                        w1_cap = wave_configs[0]["capacity"]
+                        g_setup = TroopSide([g_inf, g_cav, g_arc], g_combat_stats, [g_lead1, g_lead2, g_lead3], g_sup_heroes, g_tier, g_tg, g_widgets)
                         
-                        tot_surv = sum(np.sum(kingshot_multirally_sim2(copy.deepcopy(w_set), copy.deepcopy(g_setup))[0].troops) for _ in range(mc_runs))
-                        avg_surv = tot_surv / mc_runs
-                        results_grid.append({"Configuration": f"Wave 1 -> {', '.join(combo)}", "Avg Survivors": avg_surv, "Rate": (avg_surv / max(1, g_total_troops)) * 100})
-                        p_bar.progress((idx + 1) / len(combos))
+                        for idx, r in enumerate(ratio_grid):
+                            test_w1_troops = [w1_cap * r[0], w1_cap * r[1], w1_cap * r[2]]
+                            w_set = build_waves(wave_1_override_troops=test_w1_troops)
+                            
+                            tot_surv = sum(np.sum(kingshot_multirally_sim2(copy.deepcopy(w_set), copy.deepcopy(g_setup))[0].troops) for _ in range(mc_runs))
+                            avg_surv = tot_surv / mc_runs
+                            # For attacker optimization, we look to MINIMIZE garrison survival rate
+                            results_grid.append({"Configuration": f"Wave 1 -> Inf: {r[0]*100:.0f}% | Cav: {r[1]*100:.0f}% | Arc: {r[2]*100:.0f}%", "Avg Survivors": avg_surv, "Rate": (avg_surv / max(1, g_total_troops)) * 100})
+                            p_bar.progress((idx + 1) / len(ratio_grid))
 
-                # =========================================================================
-                # --- CONDITIONAL LEADERBOARD SORT DISPLAY ---
-                # =========================================================================
-                # Critical Strategy Distinction: Defenders want to MAXIMIZE survivors, Attackers want to MINIMIZE them
-                if opt_side == "Garrison (Defenders)":
-                    sorted_results = sorted(results_grid, key=lambda x: x["Avg Survivors"], reverse=True)
-                    st.success(" GARRISON OPTIMIZATION COMPLETE (Sorted by Highest Defensive Survival)")
-                else:
-                    sorted_results = sorted(results_grid, key=lambda x: x["Avg Survivors"], reverse=False)
-                    st.success("🔥 ATTACKER OPTIMIZATION COMPLETE (Sorted by Most Damage / Lowest Garrison Survival)")
+                    # --- CASE D: ATTACKER WAVE 1 SUPPORTER HEROES ---
+                    elif opt_side == "Attacker Waves (Rallies)" and "Supporter Heroes" in opt_mode:
+                        combos = list(itertools.combinations_with_replacement(opt_hero_pool, 4))
+                        p_bar = st.progress(0)
+                        g_setup = TroopSide([g_inf, g_cav, g_arc], g_combat_stats, [g_lead1, g_lead2, g_lead3], g_sup_heroes, g_tier, g_tg, g_widgets)
+                        
+                        for idx, combo in enumerate(combos):
+                            w_set = build_waves(wave_1_override_heroes=list(combo))
+                            
+                            tot_surv = sum(np.sum(kingshot_multirally_sim2(copy.deepcopy(w_set), copy.deepcopy(g_setup))[0].troops) for _ in range(mc_runs))
+                            avg_surv = tot_surv / mc_runs
+                            results_grid.append({"Configuration": f"Wave 1 -> {', '.join(combo)}", "Avg Survivors": avg_surv, "Rate": (avg_surv / max(1, g_total_troops)) * 100})
+                            p_bar.progress((idx + 1) / len(combos))
 
-                st.markdown("### 🏆 Top 5 Optimal Matrix Configurations")
-                top_5 = sorted_results[:5]
-                formatted_top_5 = [{"Rank": i+1, "Configuration": r["Configuration"], "Garrison Survivors (Avg)": f"{r['Avg Survivors']:,.0f}", "Garrison Survival Rate %": f"{r['Rate']:.1f}%"} for i, r in enumerate(top_5)]
-                st.table(formatted_top_5)
-                
-                with st.expander("View Complete Simulation Leaderboard"):
-                    full_formatted = [{"Rank": i+1, "Configuration": r["Configuration"], "Garrison Survivors (Avg)": f"{r['Avg Survivors']:,.0f}", "Garrison Survival Rate %": f"{r['Rate']:.1f}%"} for i, r in enumerate(sorted_results)]
-                    st.dataframe(full_formatted, use_container_width=True)
+                    # =========================================================================
+                    # --- CONDITIONAL LEADERBOARD SORT DISPLAY ---
+                    # =========================================================================
+                    if opt_side == "Garrison (Defenders)":
+                        sorted_results = sorted(results_grid, key=lambda x: x["Avg Survivors"], reverse=True)
+                        st.success(" GARRISON OPTIMIZATION COMPLETE (Sorted by Highest Defensive Survival)")
+                    else:
+                        sorted_results = sorted(results_grid, key=lambda x: x["Avg Survivors"], reverse=False)
+                        st.success("🔥 ATTACKER OPTIMIZATION COMPLETE (Sorted by Most Damage / Lowest Garrison Survival)")
+
+                    st.markdown("### 🏆 Top 5 Optimal Matrix Configurations")
+                    top_5 = sorted_results[:5]
+                    formatted_top_5 = [{"Rank": i+1, "Configuration": r["Configuration"], "Garrison Survivors (Avg)": f"{r['Avg Survivors']:,.0f}", "Garrison Survival Rate %": f"{r['Rate']:.1f}%"} for i, r in enumerate(top_5)]
+                    st.table(formatted_top_5)
+                    
+                    with st.expander("View Complete Simulation Leaderboard"):
+                        full_formatted = [{"Rank": i+1, "Configuration": r["Configuration"], "Garrison Survivors (Avg)": f"{r['Avg Survivors']:,.0f}", "Garrison Survival Rate %": f"{r['Rate']:.1f}%"} for i, r in enumerate(sorted_results)]
+                        st.dataframe(full_formatted, use_container_width=True)
+        else:
+            st.button("🚀 Run Optimization Engine Grid Search", disabled=True, help="Fix troop configuration ratio errors to execute mathematical blocks.")
