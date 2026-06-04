@@ -43,22 +43,24 @@ else:
         st.rerun()
 
     hero_db = load_hero_db()
-    hero_list = sorted(list(hero_db.keys()))
+# Generate hero lists with "None" appended as the first index option
+    hero_list = ["None"] + sorted(list(hero_db.keys()))
     
-    # --- NEW: Hero Type Classifications ---
-    infantry_heroes = sorted(["Eric", "Zoe", "Amadeus", "Helga", "Howard"])
-    cavalry_heroes = sorted(["Gordon", "Fahd", "Chenko", "Petra", "Hilde", "Jabel"])
-    archer_heroes = sorted(["Jaegar", "Marlin", "Saul", "Yaenwoo"])
-    
-    # Standard purple joiners setup
-    joiner_pool_defaults = [h for h in hero_list if not hero_db[h].get('widget', {}).get('has_widget', True)]
-    if not joiner_pool_defaults:
-        joiner_pool_defaults = ["Gordon", "Fahd", "Chenko", "Yaenwoo", "Howard"]
+    # If using the optimized version with explicit class lists, do this too:
+# Master tracking lists updated with custom variants and Gen 4 targets
+    infantry_heroes = ["None"] + sorted(["Eric", "Zoe", "Amadeus", "Helga", "Howard", "Alcar"])
+    cavalry_heroes = ["None"] + sorted(["Gordon", "Fahd", "Chenko", "Petra", "Hilde", "Jabel", "Margot"])
+    archer_heroes = ["None"] + sorted(["Jaegar", "Marlin", "Saul", "Yaenwoo", "Amane", "Quinn", "Rosa"])
     
     # Standard purple joiners setup
     joiner_pool_defaults = [h for h in hero_list if not hero_db[h].get('widget', {}).get('has_widget', True)]
     if not joiner_pool_defaults:
-        joiner_pool_defaults = ["Gordon", "Fahd", "Chenko", "Yaenwoo", "Howard"]
+        joiner_pool_defaults = ["Gordon", "Fahd", "Chenko", "Yaenwoo", "Howard","Quinn","Amane"]
+    
+    # Standard purple joiners setup
+    joiner_pool_defaults = [h for h in hero_list if not hero_db[h].get('widget', {}).get('has_widget', True)]
+    if not joiner_pool_defaults:
+        joiner_pool_defaults = ["Gordon", "Fahd", "Chenko", "Yaenwoo", "Howard","Quinn","Amane"]
 
     # =========================================================================
     # --- NEW CORE CONTROLLERS ---

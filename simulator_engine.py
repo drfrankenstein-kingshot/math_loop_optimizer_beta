@@ -141,37 +141,55 @@ def load_hero_db():
         'widget': {'has_widget': True, 'scenario': 'rally', 'type': 'health', 'val': 0.15}
     }
     
+    # --- New Core & Gen 4 Additions ---
+
+    db['Alcar'] = {
+        'skill1': {'type': 'timed_shield', 'interval': 5, 'duration': 2, 'val': 0.70, 'targets': [0, 2]},
+        'skill2': {'type': 'class_dmg_buff', 'buffs': [1.00, 0.10, 0.10]},
+        'skill3': [{'type': 'class_dmg_buff', 'buffs': [0.60, 0.0, 0.0]}, {'type': 'enemy_taken_up', 'val': 0.25}],
+        'widget': {'has_widget': True, 'scenario': 'garrison', 'type': 'health', 'val': 0.15}
+    }
+    db['Rosa'] = {
+        'skill1': {'type': 'proc', 'chance': 0.40, 'effect': 'dmg', 'val': 1.50},
+        'skill2': {'type': 'enemy_dmg_down', 'val': 0.20},
+        'skill3': {'type': 'class_atk_buff', 'target_class': 2, 'val': 0.30},
+        'widget': {'has_widget': True, 'scenario': 'rally', 'type': 'lethality', 'val': 0.15}
+    }
+    db['Margot'] = {
+        'skill1': {'type': 'atk', 'val': 0.25},
+        'skill2': {'type': 'dodge_chance', 'val': 0.20},
+        'skill3': {'type': 'proc', 'chance': 0.25, 'effect': 'double_strike', 'val': 2.00},
+        'widget': {'has_widget': True, 'scenario': 'garrison', 'type': 'lethality', 'val': 0.15}
+    }
+
     # --- Joiners (Purple) ---
     db['Gordon'] = {
-        'skill1': {'type': 'health', 'val': 0.25},
-        'skill2': {'type': 'proc', 'chance': 1.00, 'effect': 'dmg', 'val': 1.00},
-        'skill3': {'type': 'atk', 'val': 0.25},
-        'widget': {'has_widget': False}
+        'skill1': {'type': 'health', 'val': 0.25}, 'skill2': {'type': 'proc', 'chance': 1.00, 'effect': 'dmg', 'val': 1.00}, 'skill3': {'type': 'atk', 'val': 0.25}, 'widget': {'has_widget': False}
     }
     db['Fahd'] = {
-        'skill1': {'type': 'dmg_reduction', 'val': 0.20},
-        'skill2': {'type': 'proc', 'chance': 1.00, 'effect': 'dmg', 'val': 1.00},
-        'skill3': {'type': 'atk', 'val': 0.00},
-        'widget': {'has_widget': False}
+        'skill1': {'type': 'dmg_reduction', 'val': 0.20}, 'skill2': {'type': 'proc', 'chance': 1.00, 'effect': 'dmg', 'val': 1.00}, 'skill3': {'type': 'atk', 'val': 0.00}, 'widget': {'has_widget': False}
     }
     db['Chenko'] = {
-        'skill1': {'type': 'lethality', 'val': 0.25},
-        'skill2': {'type': 'dmg', 'val': 0.00},
-        'skill3': {'type': 'health', 'val': 0.15},
-        'widget': {'has_widget': False}
+        'skill1': {'type': 'lethality', 'val': 0.25}, 'skill2': {'type': 'dmg', 'val': 0.00}, 'skill3': {'type': 'health', 'val': 0.15}, 'widget': {'has_widget': False}
     }
     db['Yaenwoo'] = {
-        'skill1': {'type': 'lethality', 'val': 0.25},
-        'skill2': {'type': 'dmg', 'val': 0.00},
-        'skill3': {'type': 'health', 'val': 0.15},
-        'widget': {'has_widget': False}
+        'skill1': {'type': 'lethality', 'val': 0.25}, 'skill2': {'type': 'dmg', 'val': 0.00}, 'skill3': {'type': 'health', 'val': 0.15}, 'widget': {'has_widget': False}
     }
     db['Howard'] = {
-        'skill1': {'type': 'health', 'val': 0.15},
-        'skill2': {'type': 'dmg_reduction', 'val': 0.10},
-        'skill3': {'type': 'defense', 'val': 0.20},
+        'skill1': {'type': 'health', 'val': 0.15}, 'skill2': {'type': 'dmg_reduction', 'val': 0.10}, 'skill3': {'type': 'defense', 'val': 0.20}, 'widget': {'has_widget': False}
+    }
+    db['Amane'] = {
+        'skill1': {'type': 'atk', 'val': 0.25},
+        'skill2': {'type': 'none'},
+        'skill3': {'type': 'none'},
         'widget': {'has_widget': False}
     }
+    db['Quinn'] = {
+        'skill1': {'type': 'dmg_reduction', 'val': 0.20},
+        'skill2': {'type': 'dmg', 'val': 0.50},
+        'skill3': {'type': 'none'},
+        'widget': {'has_widget': False}
+        }
     return db
 
 def apply_skill(skill, mods):
@@ -193,7 +211,16 @@ def apply_skill(skill, mods):
     elif sk_type == 'enemy_leth_down': mods.enemy_leth_down += val
     elif sk_type == 'enemy_dmg_down':  mods.enemy_dmg_down += val
     elif sk_type == 'enemy_taken_up':  mods.enemy_taken_up += val
+    elif sk_type == 'dodge_chance':    mods.dodge += val
     elif sk_type == 'proc':          mods.procs.append(skill)
+    elif sk_type == 'class_dmg_buff':
+        if not hasattr(mods, 'class_dmg'): mods.class_dmg = np.ones(3)
+        mods.class_dmg += np.array(skill['buffs'])
+    elif sk_type == 'class_atk_buff':
+        if not hasattr(mods, 'class_atk_mod'): mods.class_atk_mod = np.ones(3)
+        mods.class_atk_mod[skill['target_class']] += val
+    elif sk_type == 'timed_shield':
+        mods.procs.append(skill)
     return mods
 
 # =========================================================================
@@ -221,9 +248,9 @@ def kingshot_multirally_sim2(rally_waves, garrison, max_rounds=200):
         a_mods = CombatMods()
         d_mods = CombatMods()
         
-        # --- RALLY LEADER SKILLS & WIDGETS ---
+# --- RALLY LEADER SKILLS & WIDGETS ---
         for hero_name in attacker.leader_heroes:
-            if hero_name in hero_db:
+            if hero_name and hero_name != "None" and hero_name in hero_db:
                 hero = hero_db[hero_name]
                 a_mods = apply_skill(hero['skill1'], a_mods)
                 a_mods = apply_skill(hero['skill2'], a_mods)
@@ -233,7 +260,7 @@ def kingshot_multirally_sim2(rally_waves, garrison, max_rounds=200):
                     
         # --- GARRISON LEADER SKILLS & WIDGETS ---
         for hero_name in current_garrison.leader_heroes:
-            if hero_name in hero_db:
+            if hero_name and hero_name != "None" and hero_name in hero_db:
                 hero = hero_db[hero_name]
                 d_mods = apply_skill(hero['skill1'], d_mods)
                 d_mods = apply_skill(hero['skill2'], d_mods)
@@ -243,10 +270,10 @@ def kingshot_multirally_sim2(rally_waves, garrison, max_rounds=200):
                     
         # --- SUPPORTER SKILLS ---
         for hero_name in attacker.supporter_heroes:
-            if hero_name in hero_db:
+            if hero_name and hero_name != "None" and hero_name in hero_db:
                 a_mods = apply_skill(hero_db[hero_name]['skill1'], a_mods)
         for hero_name in current_garrison.supporter_heroes:
-            if hero_name in hero_db:
+            if hero_name and hero_name != "None" and hero_name in hero_db:
                 d_mods = apply_skill(hero_db[hero_name]['skill1'], d_mods)
                 
         # --- BASE STAT COMPILATION ---
@@ -291,6 +318,25 @@ def kingshot_multirally_sim2(rally_waves, garrison, max_rounds=200):
             round_a_dmg_mult = a_mods.dmg * (1.0 - d_mods.enemy_dmg_down)
             round_d_dmg_mult = d_mods.dmg * (1.0 - a_mods.enemy_dmg_down)
             
+# =========================================================================
+            # >>> DROP THE NEW TIMED SHIELD BLOCK RIGHT HERE <<<
+            # =========================================================================
+            a_shield_mult = np.ones(3)
+            d_shield_mult = np.ones(3)
+            
+            for proc in a_mods.procs:
+                if proc['type'] == 'timed_shield':
+                    # Check if current round falls within the active duration window
+                    if ((r - 1) % proc['interval']) < proc['duration']:
+                        for target in proc['targets']: 
+                            a_shield_mult[target] *= (1.0 - proc['val'])
+                        
+            for proc in d_mods.procs:
+                if proc['type'] == 'timed_shield':
+                    if ((r - 1) % proc['interval']) < proc['duration']:
+                        for target in proc['targets']: 
+                            d_shield_mult[target] *= (1.0 - proc['val'])
+
             round_a_atk_mult = 1.0
             round_d_atk_mult = 1.0
             a_taken_mult = 1.0 + d_mods.enemy_taken_up
@@ -338,7 +384,8 @@ def kingshot_multirally_sim2(rally_waves, garrison, max_rounds=200):
                 if np.random.rand() < d_mods.dodge: squad_power *= 0.5
                 
                 squad_defense_pool = eff_d_stats[t_pos, 1] * eff_d_stats[t_pos, 3]
-                squad_losses = (squad_power / squad_defense_pool) * final_d_reduct * combat_scale * d_taken_mult
+                # Multiply by d_shield_mult[t_pos] at the end
+                squad_losses = (squad_power / squad_defense_pool) * final_d_reduct * combat_scale * d_taken_mult * d_shield_mult[t_pos]
                 d_loss_pool[t_pos] += squad_losses
                 
             # --- DEFENDER SNAPSHOT ---
@@ -361,7 +408,8 @@ def kingshot_multirally_sim2(rally_waves, garrison, max_rounds=200):
                 if np.random.rand() < a_mods.dodge: squad_power *= 0.5
                 
                 squad_defense_pool = eff_a_stats[t_pos, 1] * eff_a_stats[t_pos, 3]
-                squad_losses = (squad_power / squad_defense_pool) * final_a_reduct * combat_scale * a_taken_mult
+                # Multiply by a_shield_mult[t_pos] at the end
+                squad_losses = (squad_power / squad_defense_pool) * final_a_reduct * combat_scale * a_taken_mult * a_shield_mult[t_pos]
                 a_loss_pool[t_pos] += squad_losses
                 
             # Resolution
