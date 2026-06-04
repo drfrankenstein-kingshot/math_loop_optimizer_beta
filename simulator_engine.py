@@ -27,19 +27,20 @@ class TroopSide:
         self.widget_levels = widget_levels if widget_levels else [10] * 7 
         self.widget_bonus = self.calculate_widget_bonus()
         
-        self.bonus_stats_percentage[:, 0] += self.widget_bonus
-        self.bonus_stats_percentage[:, 1] += self.widget_bonus
-
         # --- SIMPLIFIED CORE MATH ---
         types = ['infantry', 'cavalry', 'archers']
         self.true_base_stats = np.zeros((3, 4))
         
-        # Pull the exact base stats for the locked Tier and TG
         for i, t_type in enumerate(types):
             self.true_base_stats[i] = get_base_stats(t_type, self.tier, self.tg_level)
 
-        # Calculate Final Combat Values
+        # 1. Base Stats * UI Percentage
         self.final_combat_stats = self.true_base_stats * (1.0 + (self.bonus_stats_percentage / 100.0))
+        
+        # 2. Multiplicative Application of Expedition Widgets to Attack (Col 0) and Defense (Col 1)
+        widget_multiplier = 1.0 + (self.widget_bonus / 100.0)
+        self.final_combat_stats[:, 0] *= widget_multiplier
+        self.final_combat_stats[:, 1] *= widget_multiplier
 
     def calculate_widget_bonus(self):
         total_bonus = 0.0
