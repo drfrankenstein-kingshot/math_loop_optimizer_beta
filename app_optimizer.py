@@ -45,6 +45,16 @@ else:
     hero_db = load_hero_db()
     hero_list = sorted(list(hero_db.keys()))
     
+    # --- NEW: Hero Type Classifications ---
+    infantry_heroes = sorted(["Eric", "Zoe", "Amadeus", "Helga", "Howard"])
+    cavalry_heroes = sorted(["Gordon", "Fahd", "Chenko", "Petra", "Hilde", "Jabel"])
+    archer_heroes = sorted(["Jaegar", "Marlin", "Saul", "Yaenwoo"])
+    
+    # Standard purple joiners setup
+    joiner_pool_defaults = [h for h in hero_list if not hero_db[h].get('widget', {}).get('has_widget', True)]
+    if not joiner_pool_defaults:
+        joiner_pool_defaults = ["Gordon", "Fahd", "Chenko", "Yaenwoo", "Howard"]
+    
     # Standard purple joiners setup
     joiner_pool_defaults = [h for h in hero_list if not hero_db[h].get('widget', {}).get('has_widget', True)]
     if not joiner_pool_defaults:
@@ -194,15 +204,15 @@ else:
                 with w_col2:
                     st.markdown("**Main Leaders & Widgets**")
                     ahc1, awc1 = st.columns([3, 1])
-                    a_l1 = ahc1.selectbox("Rally Leader 1", hero_list, index=0, key=f"wl1_{i}")
+                    a_l1 = ahc1.selectbox("Infantry Hero", infantry_heroes, index=0, key=f"wl1_{i}")
                     a_w1 = awc1.number_input("W1", 0, 10, 10, key=f"ww1_{i}")
                     
                     ahc2, awc2 = st.columns([3, 1])
-                    a_l2 = ahc2.selectbox("Rally Leader 2", hero_list, index=0, key=f"wl2_{i}")
+                    a_l2 = ahc2.selectbox("Cavalry Hero", cavalry_heroes, index=0, key=f"wl2_{i}")
                     a_w2 = awc2.number_input("W2", 0, 10, 10, key=f"ww2_{i}")
                     
                     ahc3, awc3 = st.columns([3, 1])
-                    a_l3 = ahc3.selectbox("Rally Leader 3", hero_list, index=0, key=f"wl3_{i}")
+                    a_l3 = ahc3.selectbox("Archer Hero", archer_heroes, index=0, key=f"wl3_{i}")
                     a_w3 = awc3.number_input("W3", 0, 10, 10, key=f"ww3_{i}")
                     
                     st.markdown("---")
