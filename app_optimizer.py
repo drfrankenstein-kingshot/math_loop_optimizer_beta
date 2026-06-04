@@ -16,7 +16,7 @@ def get_widget_bonus(level):
 # =========================================================================
 SECRET_PASSCODE = "Frank_BattleSimulator"
 
-st.set_page_config(page_title="Kingshot Tactical Optimizer", layout="wide")
+st.set_page_config(page_title="test Kingshot Tactical Optimizer", layout="wide")
 
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
@@ -102,17 +102,35 @@ else:
                 g_total_troops = g_inf + g_cav + g_arc
             else:
                 g_total_troops = st.number_input("Total Garrison Capacity Target", value=2800000, step=100000)
-                g_inf_pct = st.slider("Garrison Infantry %", 0, 100, 50, key="g_ip") / 100.0
-                g_cav_pct = st.slider("Garrison Cavalry %", 0, 100, 20, key="g_cp") / 100.0
-                g_arc_pct = st.slider("Garrison Archer %", 0, 100, 30, key="g_ap") / 100.0
+                st.markdown("**Adjust Garrison Ratios (Must equal 100%)**")
                 
-                # Check slider sanity cleanly
-                if abs((g_inf_pct + g_cav_pct + g_arc_pct) - 1.0) > 0.01:
-                    st.warning("⚠️ Ratios do not total 100%! Math will automatically auto-balance.")
+                # Initialize default grid dataframe
+                g_df = [{"Class": "Infantry", "Ratio %": 50}, 
+                        {"Class": "Cavalry", "Ratio %": 20}, 
+                        {"Class": "Archer", "Ratio %": 30}]
                 
-                g_inf = int(g_total_troops * g_inf_pct)
-                g_cav = int(g_total_troops * g_cav_pct)
-                g_arc = int(g_total_troops * g_arc_pct)
+                edited_g_df = st.data_editor(
+                    g_df,
+                    column_config={
+                        "Class": st.column_config.TextColumn("Troop Class", disabled=True),
+                        "Ratio %": st.column_config.NumberColumn("Ratio %", min_value=0, max_value=100, step=1, format="%d%%")
+                    },
+                    disabled=["Class"],
+                    hide_index=True,
+                    key="g_ratio_editor"
+                )
+                
+                # Validation Math
+                g_total_pct = sum(row["Ratio %"] for row in edited_g_df)
+                if g_total_pct != 100:
+                    st.error(f"❌ Garrison ratios sum to **{g_total_pct}%**. Adjust until it equals exactly 100%.")
+                    g_valid = False
+                else:
+                    g_valid = True
+                
+                g_inf = int(g_total_troops * (edited_g_df[0]["Ratio %"] / 100.0))
+                g_cav = int(g_total_troops * (edited_g_df[1]["Ratio %"] / 100.0))
+                g_arc = int(g_total_troops * (edited_g_df[2]["Ratio %"] / 100.0))
         
         with st.expander("Garrison Leadership & Supplements"):
             st.markdown("### Main Leaders (3)")
@@ -193,13 +211,33 @@ else:
                             a_total_capacity = a_inf + a_cav + a_arc
                         else:
                             a_total_capacity = st.number_input("Rally Size Capacity Limit", value=1000000, step=50000, key=f"w_cap_{i}")
-                            w_inf_pct = st.slider("Infantry Composition %", 0, 100, 60, key=f"w_ip_{i}") / 100.0
-                            w_cav_pct = st.slider("Cavalry Composition %", 0, 100, 20, key=f"w_cp_{i}") / 100.0
-                            w_arc_pct = st.slider("Archer Composition %", 0, 100, 20, key=f"w_ap_{i}") / 100.0
+                            st.markdown(f"**Adjust Wave {i+1} Ratios (Must equal 100%)**")
                             
-                            a_inf = int(a_total_capacity * w_inf_pct)
-                            a_cav = int(a_total_capacity * w_cav_pct)
-                            a_arc = int(a_total_capacity * w_arc_pct)
+                            w_df = [{"Class": "Infantry", "Ratio %": 60}, 
+                                    {"Class": "Cavalry", "Ratio %": 20}, 
+                                    {"Class": "Archer", "Ratio %": 20}]
+                            
+                            edited_w_df = st.data_editor(
+                                w_df,
+                                column_config={
+                                    "Class": st.column_config.TextColumn("Troop Class", disabled=True),
+                                    "Ratio %": st.column_config.NumberColumn("Ratio %", min_value=0, max_value=100, step=1, format="%d%%")
+                                },
+                                disabled=["Class"],
+                                hide_index=True,
+                                key=f"w_ratio_editor_{i}"
+                            )
+                            
+                            w_total_pct = sum(row["Ratio %"] for row in edited_w_df)
+                            if w_total_pct != 100:
+                                st.error(f"❌ Wave {i+1} ratios sum to **{w_total_pct}%**. Adjust until it equals exactly 100%.")
+                                st.session_state[f"w_valid_{i}"] = False
+                            else:
+                                st.session_state[f"w_valid_{i}"] = True
+                            
+                            a_inf = int(a_total_capacity * (edited_w_df[0]["Ratio %"] / 100.0))
+                            a_cav = int(a_total_capacity * (edited_w_df[1]["Ratio %"] / 100.0))
+                            a_arc = int(a_total_capacity * (edited_w_df[2]["Ratio %"] / 100.0))
                     
                 with w_col2:
                     st.markdown("**Main Leaders & Widgets**")
